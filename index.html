@@ -425,13 +425,17 @@
             if (!searchTerm) return;
             
             const stockCounts = aggregateStock();
-            const quantity = stockCounts[searchTerm] || 0;
+            const searchLower = searchTerm.toLowerCase();
             
-            const results = quantity > 0 ? [{
-                sku: searchTerm,
-                specs: specsData[searchTerm] || 'No description',
-                quantity
-            }] : [];
+            // Find SKUs that contain the search term (case-insensitive partial match)
+            const results = Object.entries(stockCounts)
+                .filter(([sku]) => sku.toLowerCase().includes(searchLower))
+                .map(([sku, quantity]) => ({
+                    sku,
+                    specs: specsData[sku] || 'No description',
+                    quantity
+                }))
+                .sort((a, b) => b.quantity - a.quantity);
             
             showResults(results, true);
         }
@@ -440,13 +444,18 @@
             const searchTerm = normalizeSKU(document.getElementById('searchInput').value);
             if (!searchTerm) return;
 
-            // If SKU exists in specs, show its specs. If not, show "SKU not found"
-            const foundSpec = specsData[searchTerm];
-            const result = {
-                sku: searchTerm,
-                specs: foundSpec || 'SKU not found in specs'
-            };
-            showResults([result], false);
+            const searchLower = searchTerm.toLowerCase();
+            
+            // Find all SKUs that contain the search term (case-insensitive partial match)
+            const results = Object.keys(specsData)
+                .filter(sku => sku.toLowerCase().includes(searchLower))
+                .map(sku => ({
+                    sku,
+                    specs: specsData[sku] || 'No description'
+                }))
+                .sort((a, b) => a.sku.localeCompare(b.sku));
+            
+            showResults(results, false);
         }
 
         function handleSearchAvailableSpecs() {
@@ -457,7 +466,12 @@
             const stockCounts = aggregateStock();
             
             const results = Object.entries(specsData)
-                .filter(([sku, specs]) => (specs || '').toLowerCase().includes(searchLower))
+                .filter(([sku, specs]) => {
+                    // Search in both SKU and specs (case-insensitive)
+                    const skuMatch = sku.toLowerCase().includes(searchLower);
+                    const specsMatch = (specs || '').toLowerCase().includes(searchLower);
+                    return skuMatch || specsMatch;
+                })
                 .map(([sku, specs]) => ({
                     sku,
                     specs,
@@ -476,11 +490,17 @@
             const searchLower = searchTerm.toLowerCase();
             
             const results = Object.entries(specsData)
-                .filter(([sku, specs]) => (specs || '').toLowerCase().includes(searchLower))
+                .filter(([sku, specs]) => {
+                    // Search in both SKU and specs (case-insensitive)
+                    const skuMatch = sku.toLowerCase().includes(searchLower);
+                    const specsMatch = (specs || '').toLowerCase().includes(searchLower);
+                    return skuMatch || specsMatch;
+                })
                 .map(([sku, specs]) => ({
                     sku,
                     specs
-                }));
+                }))
+                .sort((a, b) => a.sku.localeCompare(b.sku));
             
             showResults(results, false);
         }
