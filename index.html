@@ -304,7 +304,7 @@
                         },
                         tooltip: {
                             enabled: true,
-                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.95)',
                             titleColor: '#fff',
                             bodyColor: '#fff',
                             titleFont: {
@@ -312,11 +312,14 @@
                                 weight: 'bold'
                             },
                             bodyFont: {
-                                size: 14
+                                size: 13,
+                                lineHeight: 1.4
                             },
-                            padding: 12,
-                            cornerRadius: 8,
+                            padding: 15,
+                            cornerRadius: 10,
                             displayColors: true,
+                            maxWidth: 400,
+                            bodySpacing: 8,
                             callbacks: {
                                 title: (context) => {
                                     const label = context[0].label;
@@ -329,9 +332,31 @@
                                     const sku = parts[0];
                                     const specs = parts[1] || 'No description available';
                                     const quantity = context.parsed;
+                                    
+                                    // Split long specs into multiple lines
+                                    const maxLineLength = 50;
+                                    const specsLines = [];
+                                    let currentLine = '';
+                                    
+                                    if (specs && specs !== 'No description available') {
+                                        const words = specs.split(' ');
+                                        words.forEach(word => {
+                                            if ((currentLine + word).length <= maxLineLength) {
+                                                currentLine += (currentLine ? ' ' : '') + word;
+                                            } else {
+                                                if (currentLine) specsLines.push(currentLine);
+                                                currentLine = word;
+                                            }
+                                        });
+                                        if (currentLine) specsLines.push(currentLine);
+                                    } else {
+                                        specsLines.push(specs);
+                                    }
+                                    
                                     return [
                                         `Quantity: ${quantity}`,
-                                        `Specs: ${specs}`
+                                        `Specs:`,
+                                        ...specsLines.map(line => `  ${line}`)
                                     ];
                                 }
                             }
@@ -406,7 +431,7 @@
                         },
                         tooltip: {
                             enabled: true,
-                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                            backgroundColor: 'rgba(0, 0, 0, 0.95)',
                             titleColor: '#fff',
                             bodyColor: '#fff',
                             titleFont: {
@@ -414,11 +439,14 @@
                                 weight: 'bold'
                             },
                             bodyFont: {
-                                size: 14
+                                size: 13,
+                                lineHeight: 1.4
                             },
-                            padding: 12,
-                            cornerRadius: 8,
+                            padding: 15,
+                            cornerRadius: 10,
                             displayColors: true,
+                            maxWidth: 400,
+                            bodySpacing: 8,
                             callbacks: {
                                 title: (context) => {
                                     const label = context[0].label;
@@ -431,9 +459,31 @@
                                     const sku = parts[0];
                                     const specs = parts[1] || 'No description available';
                                     const quantity = context.parsed;
+                                    
+                                    // Split long specs into multiple lines
+                                    const maxLineLength = 50;
+                                    const specsLines = [];
+                                    let currentLine = '';
+                                    
+                                    if (specs && specs !== 'No description available') {
+                                        const words = specs.split(' ');
+                                        words.forEach(word => {
+                                            if ((currentLine + word).length <= maxLineLength) {
+                                                currentLine += (currentLine ? ' ' : '') + word;
+                                            } else {
+                                                if (currentLine) specsLines.push(currentLine);
+                                                currentLine = word;
+                                            }
+                                        });
+                                        if (currentLine) specsLines.push(currentLine);
+                                    } else {
+                                        specsLines.push(specs);
+                                    }
+                                    
                                     return [
                                         `Quantity: ${quantity}`,
-                                        `Specs: ${specs}`
+                                        `Specs:`,
+                                        ...specsLines.map(line => `  ${line}`)
                                     ];
                                 }
                             }
