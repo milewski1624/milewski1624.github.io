@@ -33,9 +33,10 @@
             const [filteredData, setFilteredData] = useState([]);
             const [showSummary, setShowSummary] = useState(false);
             const [issueSummary, setIssueSummary] = useState({});
-
-            const SHEET_ID = '1i2gM9ocy1-cftQCPQPRaVmuc5E8lGWMq';
-            const SHEET_GID = '1032288076';
+            const [sheetUrl, setSheetUrl] = useState('');
+            const [showSettings, setShowSettings] = useState(false);
+            const [savedSheetId, setSavedSheetId] = useState('1i2gM9ocy1-cftQCPQPRaVmuc5E8lGWMq');
+            const [savedSheetGid, setSavedSheetGid] = useState('1032288076');
 
             useEffect(() => {
                 fetchData();
@@ -44,7 +45,7 @@
             const fetchData = async () => {
                 try {
                     setLoading(true);
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${SHEET_GID}`;
+                    const url = `https://docs.google.com/spreadsheets/d/${savedSheetId}/export?format=csv&gid=${savedSheetGid}`;
                     const response = await fetch(url);
                     
                     if (!response.ok) {
@@ -154,6 +155,33 @@
                 setShowSummary(false);
             };
 
+            const parseSheetUrl = (url) => {
+                const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                const gidMatch = url.match(/[?&]gid=(\d+)/);
+                
+                if (match) {
+                    return {
+                        sheetId: match[1],
+                        gid: gidMatch ? gidMatch[1] : '0'
+                    };
+                }
+                return null;
+            };
+
+            const saveSheetSettings = () => {
+                const parsed = parseSheetUrl(sheetUrl);
+                if (!parsed) {
+                    alert('Invalid Google Sheet URL. Please use a valid Google Sheets URL.');
+                    return;
+                }
+                
+                setSavedSheetId(parsed.sheetId);
+                setSavedSheetGid(parsed.gid);
+                setShowSettings(false);
+                setSheetUrl('');
+                fetchData(); // Reload data with new sheet
+            };
+
             if (loading) {
                 return (
                     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -195,8 +223,43 @@
                                     <h1 className="text-4xl font-bold text-gray-800 mb-2">Customer Returns Dashboard</h1>
                                     <p className="text-gray-600">Analyze return patterns and issues</p>
                                 </div>
-                                <Package />
+                                <div className="flex items-center space-x-4">
+                                    <button
+                                        onClick={() => setShowSettings(!showSettings)}
+                                        className="bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition font-medium"
+                                    >
+                                        {showSettings ? 'Hide Settings' : 'Sheet Settings'}
+                                    </button>
+                                    <Package />
+                                </div>
                             </div>
+                            
+                            {showSettings && (
+                                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                                    <h3 className="text-lg font-bold text-gray-800 mb-3">Google Sheet Configuration</h3>
+                                    <div className="flex space-x-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Paste Google Sheet URL here..."
+                                            value={sheetUrl}
+                                            onChange={(e) => setSheetUrl(e.target.value)}
+                                            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        />
+                                        <button
+                                            onClick={saveSheetSettings}
+                                            className="bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition font-medium"
+                                        >
+                                            Save & Reload
+                                        </button>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mt-2">
+                                        Current Sheet ID: {savedSheetId} | GID: {savedSheetGid}
+                                    </p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Note: Sheet must be shared as "Anyone with link can edit" for CSV export to work
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
