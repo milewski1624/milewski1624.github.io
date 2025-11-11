@@ -38,9 +38,14 @@
 
 
             const sortDataByDate = (dataToSort) => {
+                if (dataToSort.length === 0) return dataToSort;
+                
+                // Get the first column name (usually date)
+                const firstColumn = Object.keys(dataToSort[0]).find(key => key !== 'id');
+                
                 return dataToSort.sort((a, b) => {
-                    const dateA = parseDate(a.date);
-                    const dateB = parseDate(b.date);
+                    const dateA = parseDate(a[firstColumn]);
+                    const dateB = parseDate(b[firstColumn]);
                     if (!dateA && !dateB) return 0;
                     if (!dateA) return 1;
                     if (!dateB) return -1;
@@ -60,18 +65,27 @@
                     
                     console.log('Total rows:', rows.length);
                     if (rows.length > 0) {
-                        console.log('First row:', rows[0]);
+                        console.log('Headers:', rows[0]);
                     }
                     
-                    const processedData = rows.slice(1).map((row, index) => ({
-                        id: index,
-                        date: row[0] || '',
-                        issue: row[8] || ''
-                    })).filter(item => item.date);
+                    // Get headers from first row
+                    const headers = rows[0];
+                    
+                    const processedData = rows.slice(1).map((row, index) => {
+                        const rowData = { id: index };
+                        headers.forEach((header, colIndex) => {
+                            rowData[header] = row[colIndex] || '';
+                        });
+                        return rowData;
+                    }).filter(item => {
+                        // Filter out rows that don't have a date (assuming first column is date)
+                        const dateColumn = headers[0];
+                        return item[dateColumn];
+                    });
                     
                     console.log('Processed data length:', processedData.length);
                     if (processedData.length > 0) {
-                        console.log('Sample processed data:', processedData.slice(0, 3));
+                        console.log('Sample processed data:', processedData.slice(0, 1));
                     }
                     
                     const sortedData = sortDataByDate(processedData);
@@ -158,9 +172,12 @@
                 
                 console.log('Filtering from', start, 'to', end);
                 
+                // Get the first column name (usually date)
+                const dateColumn = data.length > 0 ? Object.keys(data[0]).find(key => key !== 'id') : 'date';
+                
                 const filtered = data.filter(item => {
-                    const itemDate = parseDate(item.date);
-                    console.log('Item:', item.date, 'Parsed date:', itemDate);
+                    const itemDate = parseDate(item[dateColumn]);
+                    console.log('Item:', item[dateColumn], 'Parsed date:', itemDate);
                     if (!itemDate) return false;
                     // Create a copy of itemDate to avoid modifying the original
                     const itemDateCopy = new Date(itemDate);
@@ -176,21 +193,52 @@
             const generateIssueSummary = () => {
                 const summary = {};
                 
+                // Find the issue column (look for common issue column names)
+                const issueColumn = data.length > 0 ? 
+                    Object.keys(data[0]).find(key => 
+                        key.toLowerCase().includes('issue') || 
+                        key.toLowerCase().includes('reason') || 
+                        key.toLowerCase().includes('description') ||
+                        key.toLowerCase().includes('problem')
+                    ) : null;
+                
                 filteredData.forEach(item => {
-                    if (item.issue && item.issue.trim()) {
-                        const issues = item.issue.split(/[,;.\n]/).map(i => i.trim()).filter(i => i);
+                    const issueText = issueColumn ? item[issueColumn] : '';
+                    
+                    if (issueText && issueText.trim()) {
+                        // Split by common separators to handle multiple issues in one cell
+                        const issues = issueText.split(/[,;.\n]/).map(i => i.trim()).filter(i => i);
                         
-                        issues.forEach(issue => {
-                            const normalized = issue.toLowerCase();
-                            if (normalized) {
-                                if (summary[normalized]) {
-                                    summary[normalized].count++;
-                                    summary[normalized].original = issue;
-                                } else {
-                                    summary[normalized] = { count: 1, original: issue };
-                                }
+                        if (issues.length === 0) {
+                            // If issue field is blank or only whitespace after trimming
+                            const normalized = 'change of mind';
+                            if (summary[normalized]) {
+                                summary[normalized].count++;
+                            } else {
+                                summary[normalized] = { count: 1, original: 'Change of Mind' };
                             }
-                        });
+                        } else {
+                            // Process each individual issue
+                            issues.forEach(issue => {
+                                const normalized = issue.toLowerCase();
+                                if (normalized) {
+                                    if (summary[normalized]) {
+                                        summary[normalized].count++;
+                                        // Keep the original case from first occurrence
+                                    } else {
+                                        summary[normalized] = { count: 1, original: issue };
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        // Handle completely empty issue field
+                        const normalized = 'change of mind';
+                        if (summary[normalized]) {
+                            summary[normalized].count++;
+                        } else {
+                            summary[normalized] = { count: 1, original: 'Change of Mind' };
+                        }
                     }
                 });
 
@@ -369,32 +417,30 @@
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Returns Details</h2>
                             
                             <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="bg-indigo-50">
-                                            <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                                                Date
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
-                                                Issue Description
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {filteredData.map((item, index) => (
-                                            <tr key={item.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                    {item.date}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-gray-700">
-                                                    {item.issue || <span className="text-gray-400 italic">No issue reported</span>}
-                                                </td>
+                                {filteredData.length > 0 ? (
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-indigo-50">
+                                                {Object.keys(filteredData[0]).filter(key => key !== 'id').map((header, index) => (
+                                                    <th key={index} className="px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider">
+                                                        {header}
+                                                    </th>
+                                                ))}
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                
-                                {filteredData.length === 0 && (
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {filteredData.map((item, rowIndex) => (
+                                                <tr key={item.id} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                    {Object.entries(item).filter(([key]) => key !== 'id').map(([key, value], colIndex) => (
+                                                        <td key={colIndex} className="px-6 py-4 text-sm text-gray-700">
+                                                            {value || <span className="text-gray-400 italic">-</span>}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
                                     <div className="text-center py-12">
                                         <Package />
                                         <p className="text-gray-500 text-lg mt-4">No returns found for selected date range</p>
