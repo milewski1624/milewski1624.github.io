@@ -112,6 +112,8 @@
                 const filtered = data.filter(item => {
                     const itemDate = parseDate(item.date);
                     if (!itemDate) return false;
+                    // Set item date to start of day for proper comparison
+                    itemDate.setHours(0, 0, 0, 0);
                     return itemDate >= start && itemDate <= end;
                 });
 
