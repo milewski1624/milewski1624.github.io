@@ -34,6 +34,12 @@
             const [showSummary, setShowSummary] = useState(false);
             const [issueSummary, setIssueSummary] = useState({});
             const [showSettings, setShowSettings] = useState(false);
+            const [searchStartDate, setSearchStartDate] = useState('');
+            const [searchEndDate, setSearchEndDate] = useState('');
+            const [searchText, setSearchText] = useState('');
+            const [searchFilteredData, setSearchFilteredData] = useState([]);
+            const [showSearchSummary, setShowSearchSummary] = useState(false);
+            const [searchIssueSummary, setSearchIssueSummary] = useState({});
 
 
 
@@ -319,6 +325,128 @@
                 setShowSummary(false);
             };
 
+            const searchByDateAndText = () => {
+                console.log('Search called. Start date:', searchStartDate, 'End date:', searchEndDate, 'Search text:', searchText);
+                console.log('Current data length:', data.length);
+                
+                if (!searchStartDate || !searchEndDate) {
+                    // If no dates selected, show all data
+                    console.log('No dates selected, showing all data');
+                    setSearchFilteredData(data);
+                    setShowSearchSummary(false);
+                    return;
+                }
+
+                const start = new Date(searchStartDate);
+                const end = new Date(searchEndDate);
+                // Set start date to start of day and end date to end of day
+                start.setHours(0, 0, 0, 0);
+                end.setHours(23, 59, 59, 999);
+                
+                console.log('Filtering from', start, 'to', end);
+                
+                // Get the first column header (date column - column 0)
+                const headers = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
+                const dateColumn = headers[0]; // Column 0 is date
+                const issueColumn = headers[8]; // Column 8 is issues
+                
+                const filtered = data.filter(item => {
+                    const itemDate = parseDate(item[dateColumn]);
+                    if (!itemDate) return false;
+                    
+                    // Check date range
+                    const itemDateCopy = new Date(itemDate);
+                    const inDateRange = itemDateCopy >= start && itemDateCopy <= end;
+                    
+                    if (!inDateRange) return false;
+                    
+                    // Check if search text matches issue column
+                    if (!searchText || searchText.trim() === '') {
+                        return true; // No search text, include all in date range
+                    }
+                    
+                    const issueText = issueColumn ? (item[issueColumn] || '').toLowerCase() : '';
+                    const searchLower = searchText.toLowerCase();
+                    
+                    return issueText.includes(searchLower);
+                });
+
+                console.log('Search filtered data length:', filtered.length);
+                const sortedFiltered = sortDataByDate([...filtered]); // Create copy and sort
+                setSearchFilteredData(sortedFiltered);
+                setShowSearchSummary(false);
+            };
+
+            const resetSearchFilter = () => {
+                setSearchStartDate('');
+                setSearchEndDate('');
+                setSearchText('');
+                setSearchFilteredData([]);
+                setShowSearchSummary(false);
+            };
+
+            const generateSearchIssueSummary = () => {
+                const summary = {};
+                
+                // Get column 8 (issues column) - index 8 = 9th column
+                const headers = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
+                const issueColumn = headers[8]; // Column 8 is issues (before price column)
+                
+                console.log('Search issue column:', issueColumn);
+                console.log('Headers:', headers);
+                console.log('Total search items to process:', searchFilteredData.length);
+                
+                let totalIssuesProcessed = 0;
+                
+                searchFilteredData.forEach((item, index) => {
+                    const issueText = issueColumn ? item[issueColumn] : '';
+                    console.log(`Processing search item ${index}: "${issueText}"`);
+                    
+                    if (issueText && issueText.trim()) {
+                        // Split by common separators to handle multiple issues in one cell
+                        const issues = issueText.split(/[,;.\n]/).map(i => i.trim()).filter(i => i);
+                        
+                        if (issues.length === 0) {
+                            // If issue field is blank or only whitespace after trimming
+                            const normalized = 'change of mind';
+                            if (summary[normalized]) {
+                                summary[normalized].count++;
+                            } else {
+                                summary[normalized] = { count: 1, original: 'Change of Mind' };
+                            }
+                            totalIssuesProcessed++;
+                        } else {
+                            // Process each individual issue
+                            issues.forEach(issue => {
+                                const normalized = issue.toLowerCase();
+                                if (normalized) {
+                                    if (summary[normalized]) {
+                                        summary[normalized].count++;
+                                    } else {
+                                        summary[normalized] = { count: 1, original: issue };
+                                    }
+                                    totalIssuesProcessed++;
+                                }
+                            });
+                        }
+                    } else {
+                        // Handle completely empty issue field
+                        const normalized = 'change of mind';
+                        if (summary[normalized]) {
+                            summary[normalized].count++;
+                        } else {
+                            summary[normalized] = { count: 1, original: 'Change of Mind' };
+                        }
+                        totalIssuesProcessed++;
+                    }
+                });
+
+                console.log('Total search issues processed:', totalIssuesProcessed);
+                console.log('Search summary:', summary);
+                setSearchIssueSummary(summary);
+                setShowSearchSummary(true);
+            };
+
 
 
             if (loading) {
@@ -327,141 +455,24 @@
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
                             <p className="text-gray-600 text-lg">Loading returns data...</p>
-                        </div>
-                    </div>
-                );
-            }
-
-
-
-            const sortedIssues = Object.entries(issueSummary)
-                .sort((a, b) => b[1].count - a[1].count);
-
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
-                    <div className="max-w-7xl mx-auto">
-                        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-4xl font-bold text-gray-800 mb-2">Customer Returns Dashboard</h1>
-                                    <p className="text-gray-600">Analyze return patterns and issues</p>
-                                </div>
-                                <div className="flex items-center space-x-4">
-                                    <button
-                                        onClick={() => setShowSettings(!showSettings)}
-                                        className="bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition font-medium"
-                                    >
-                                        {showSettings ? 'Hide Upload' : 'Upload CSV'}
-                                    </button>
-                                    <Package />
-                                </div>
-                            </div>
-                            
-                            {showSettings && (
-                                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                                    <h3 className="text-lg font-bold text-gray-800 mb-3">Upload CSV File</h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Select CSV File
-                                            </label>
-                                            <input
-                                                type="file"
-                                                accept=".csv"
-                                                onChange={handleFileUpload}
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                        <div className="text-sm text-gray-600">
-                                            <p className="font-medium mb-1">Instructions:</p>
-                                            <ul className="list-disc list-inside space-y-1">
-                                                <li>Download your data as CSV from Google Sheets</li>
-                                                <li>Column 0: Date</li>
-                                                <li>Column 8: Issue Description</li>
-                                                <li>Upload the file using the button above</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                            <div className="flex items-center mb-4">
-                                <Calendar />
-                                <h2 className="text-2xl font-bold text-gray-800 ml-2">Date Range Filter</h2>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                                    <input
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                    />
-                                </div>
-                                
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                                    <input
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                    />
-                                </div>
-                                
-                                <div className="flex items-end">
-                                    <button
-                                        onClick={filterByDateRange}
-                                        className="w-full bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition font-medium"
-                                    >
-                                        Apply Filter
-                                    </button>
-                                </div>
-                                
-                                <div className="flex items-end">
-                                    <button
-                                        onClick={resetFilter}
-                                        className="w-full bg-gray-500 text-white py-2 px-6 rounded-lg hover:bg-gray-600 transition font-medium"
-                                    >
-                                        Reset
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center justify-between">
-                                <p className="text-gray-600">
-                                    Showing <span className="font-bold text-indigo-600">{filteredData.length}</span> of {data.length} returns
-                                </p>
-                                
-                                {data.length > 0 && (
-                                    <button
-                                        onClick={generateIssueSummary}
-                                        className="bg-green-600 text-white py-2 px-6 rounded-lg hover:bg-green-700 transition font-medium flex items-center"
-                                    >
-                                        <TrendingUp />
-                                        <span className="ml-2">Generate Issue Summary</span>
-                                    </button>
-                                )}
                             </div>
                         </div>
 
-                        {showSummary && (
+                        {showSearchSummary && (
                             <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Issue Summary</h2>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Search Issue Summary</h2>
                                 
-                                {sortedIssues.length === 0 ? (
-                                    <p className="text-gray-600 text-center py-8">No issues found in selected date range</p>
+                                {Object.entries(searchIssueSummary).length === 0 ? (
+                                    <p className="text-gray-600 text-center py-8">No issues found in search results</p>
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {sortedIssues.map(([key, value]) => (
-                                            <div key={key} className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-4 border border-indigo-200">
+                                        {Object.entries(searchIssueSummary)
+                                            .sort((a, b) => b[1].count - a[1].count)
+                                            .map(([key, value]) => (
+                                            <div key={key} className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
                                                 <div className="flex items-start justify-between">
                                                     <p className="text-gray-800 font-medium flex-1 pr-2">{value.original}</p>
-                                                    <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                                    <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">
                                                         {value.count}
                                                     </span>
                                                 </div>
@@ -470,10 +481,10 @@
                                     </div>
                                 )}
                                 
-                                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                                <div className="mt-6 p-4 bg-purple-50 rounded-lg">
                                     <p className="text-sm text-gray-700">
-                                        <strong>Total Unique Issues:</strong> {sortedIssues.length} | 
-                                        <strong className="ml-4">Total Returns in Range:</strong> {filteredData.length}
+                                        <strong>Total Unique Issues:</strong> {Object.entries(searchIssueSummary).length} | 
+                                        <strong className="ml-4">Search Results:</strong> {searchFilteredData.length}
                                     </p>
                                 </div>
                             </div>
@@ -483,7 +494,47 @@
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Returns Details</h2>
                             
                             <div className="overflow-x-auto">
-                                {filteredData.length > 0 ? (() => {
+                                {searchFilteredData.length > 0 ? (() => {
+                                    const headers = Object.keys(searchFilteredData[0]).filter(key => key !== 'id');
+                                    const linkColumnIndex = detectLinkColumn(headers, searchFilteredData);
+                                    const columnAfterLink = linkColumnIndex + 1;
+                                    
+                                    return (
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="bg-purple-50">
+                                                    {headers.map((header, index) => (
+                                                        <th key={index} className={`px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider ${index === 0 ? 'whitespace-nowrap' : ''}`}>
+                                                            {header}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {searchFilteredData.map((item, rowIndex) => (
+                                                    <tr key={item.id} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                        {Object.entries(item).filter(([key]) => key !== 'id').map(([key, value], colIndex) => (
+                                                            <td key={colIndex} className={`px-6 py-4 text-sm text-gray-700 ${colIndex === 0 ? 'whitespace-nowrap' : ''} ${colIndex === columnAfterLink ? 'whitespace-nowrap' : ''}`}>
+                                                                {colIndex === linkColumnIndex && isLink(value) ? (
+                                                                    <a 
+                                                                        href={formatLink(value)} 
+                                                                        target="_blank" 
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:text-blue-800 underline"
+                                                                    >
+                                                                        {value}
+                                                                    </a>
+                                                                ) : (
+                                                                    value || <span className="text-gray-400 italic">-</span>
+                                                                )}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    );
+                                })() : filteredData.length > 0 ? (() => {
                                     const headers = Object.keys(filteredData[0]).filter(key => key !== 'id');
                                     const linkColumnIndex = detectLinkColumn(headers, filteredData);
                                     const columnAfterLink = linkColumnIndex + 1;
@@ -526,7 +577,11 @@
                                 })() : (
                                     <div className="text-center py-12">
                                         <Package />
-                                        <p className="text-gray-500 text-lg mt-4">No returns found for selected date range</p>
+                                        <p className="text-gray-500 text-lg mt-4">
+                                            {searchFilteredData.length === 0 && (searchStartDate || searchEndDate || searchText) 
+                                                ? 'No search results found. Try adjusting your search criteria.' 
+                                                : 'No returns found for selected date range'}
+                                        </p>
                                     </div>
                                 )}
                             </div>
