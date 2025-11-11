@@ -40,12 +40,13 @@
             const sortDataByDate = (dataToSort) => {
                 if (dataToSort.length === 0) return dataToSort;
                 
-                // Get the first column name (usually date)
-                const firstColumn = Object.keys(dataToSort[0]).find(key => key !== 'id');
+                // Get the first column header (date column)
+                const headers = Object.keys(dataToSort[0]).filter(key => key !== 'id');
+                const dateColumn = headers[0]; // Column 0 is date
                 
                 return dataToSort.sort((a, b) => {
-                    const dateA = parseDate(a[firstColumn]);
-                    const dateB = parseDate(b[firstColumn]);
+                    const dateA = parseDate(a[dateColumn]);
+                    const dateB = parseDate(b[dateColumn]);
                     if (!dateA && !dateB) return 0;
                     if (!dateA) return 1;
                     if (!dateB) return -1;
@@ -78,9 +79,8 @@
                         });
                         return rowData;
                     }).filter(item => {
-                        // Filter out rows that don't have a date (assuming first column is date)
-                        const dateColumn = headers[0];
-                        return item[dateColumn];
+                        // Filter out rows that don't have a date (column 0)
+                        return item[headers[0]];
                     });
                     
                     console.log('Processed data length:', processedData.length);
@@ -172,8 +172,9 @@
                 
                 console.log('Filtering from', start, 'to', end);
                 
-                // Get the first column name (usually date)
-                const dateColumn = data.length > 0 ? Object.keys(data[0]).find(key => key !== 'id') : 'date';
+                // Get the first column header (date column - column 0)
+                const headers = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
+                const dateColumn = headers[0]; // Column 0 is date
                 
                 const filtered = data.filter(item => {
                     const itemDate = parseDate(item[dateColumn]);
@@ -193,14 +194,12 @@
             const generateIssueSummary = () => {
                 const summary = {};
                 
-                // Find the issue column (look for common issue column names)
-                const issueColumn = data.length > 0 ? 
-                    Object.keys(data[0]).find(key => 
-                        key.toLowerCase().includes('issue') || 
-                        key.toLowerCase().includes('reason') || 
-                        key.toLowerCase().includes('description') ||
-                        key.toLowerCase().includes('problem')
-                    ) : null;
+                // Get column 9 (issues column) - index 9 = 10th column
+                const headers = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
+                const issueColumn = headers[9]; // Column 9 is issues
+                
+                console.log('Issue column:', issueColumn);
+                console.log('Headers:', headers);
                 
                 filteredData.forEach(item => {
                     const issueText = issueColumn ? item[issueColumn] : '';
@@ -242,6 +241,7 @@
                     }
                 });
 
+                console.log('Summary:', summary);
                 setIssueSummary(summary);
                 setShowSummary(true);
             };
