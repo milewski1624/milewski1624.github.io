@@ -106,6 +106,8 @@
 
                 const start = new Date(startDate);
                 const end = new Date(endDate);
+                // Set end date to end of day to include same day records
+                end.setHours(23, 59, 59, 999);
                 
                 const filtered = data.filter(item => {
                     const itemDate = parseDate(item.date);
