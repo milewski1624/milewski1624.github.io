@@ -35,8 +35,8 @@
             const [issueSummary, setIssueSummary] = useState({});
             const [sheetUrl, setSheetUrl] = useState('');
             const [showSettings, setShowSettings] = useState(false);
-            const [savedSheetId, setSavedSheetId] = useState('1i2gM9ocy1-cftQCPQPRaVmuc5E8lGWMq');
-            const [savedSheetGid, setSavedSheetGid] = useState('1032288076');
+            const [savedSheetId, setSavedSheetId] = useState('');
+            const [savedSheetGid, setSavedSheetGid] = useState('0');
 
             useEffect(() => {
                 fetchData();
@@ -45,11 +45,24 @@
             const fetchData = async () => {
                 try {
                     setLoading(true);
+                    
+                    // If no sheet is configured, load with empty data
+                    if (!savedSheetId || savedSheetId === '') {
+                        setData([]);
+                        setFilteredData([]);
+                        setLoading(false);
+                        return;
+                    }
+                    
                     const url = `https://docs.google.com/spreadsheets/d/${savedSheetId}/export?format=csv&gid=${savedSheetGid}`;
                     const response = await fetch(url);
                     
                     if (!response.ok) {
-                        throw new Error('Failed to fetch data from Google Sheets');
+                        // Don't throw error, just load empty data
+                        setData([]);
+                        setFilteredData([]);
+                        setLoading(false);
+                        return;
                     }
                     
                     const csvText = await response.text();
@@ -71,7 +84,9 @@
                     setFilteredData(processedData);
                     setLoading(false);
                 } catch (err) {
-                    setError(err.message);
+                    // Don't set error, just load empty data
+                    setData([]);
+                    setFilteredData([]);
                     setLoading(false);
                 }
             };
@@ -193,23 +208,7 @@
                 );
             }
 
-            if (error) {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md">
-                            <AlertCircle />
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Error Loading Data</h2>
-                            <p className="text-gray-600 text-center">{error}</p>
-                            <button 
-                                onClick={fetchData}
-                                className="mt-6 w-full bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 transition"
-                            >
-                                Retry
-                            </button>
-                        </div>
-                    </div>
-                );
-            }
+
 
             const sortedIssues = Object.entries(issueSummary)
                 .sort((a, b) => b[1].count - a[1].count);
@@ -252,9 +251,9 @@
                                             Save & Reload
                                         </button>
                                     </div>
-                                    <p className="text-sm text-gray-600 mt-2">
-                                        Current Sheet ID: {savedSheetId} | GID: {savedSheetGid}
-                                    </p>
+                            <p className="text-sm text-gray-600 mt-2">
+                                Current Sheet ID: {savedSheetId || 'Not configured'} | GID: {savedSheetGid}
+                            </p>
                                     <p className="text-xs text-gray-500 mt-1">
                                         Note: Sheet must be shared as "Anyone with link can edit" for CSV export to work
                                     </p>
