@@ -209,6 +209,47 @@
                 setShowSummary(false);
             };
 
+            const detectLinkColumn = (headers, sampleData) => {
+                if (!headers || !sampleData || sampleData.length === 0) return -1;
+                
+                // Check each column for URLs
+                for (let colIndex = 0; colIndex < headers.length; colIndex++) {
+                    const header = headers[colIndex];
+                    const columnName = header.toLowerCase();
+                    
+                    // Check if column name suggests it contains links
+                    if (columnName.includes('link') || columnName.includes('url') || columnName.includes('href')) {
+                        return colIndex;
+                    }
+                    
+                    // Check sample data for URLs in this column
+                    const hasUrls = sampleData.slice(0, 5).some(row => {
+                        const value = row[header];
+                        return value && (value.includes('http://') || value.includes('https://') || value.includes('www.'));
+                    });
+                    
+                    if (hasUrls) {
+                        return colIndex;
+                    }
+                }
+                
+                return -1;
+            };
+
+            const isLink = (text) => {
+                return text && (text.includes('http://') || text.includes('https://') || text.includes('www.'));
+            };
+
+            const formatLink = (text) => {
+                if (!text) return text;
+                
+                // Add https:// if missing
+                if (text.includes('www.') && !text.includes('http')) {
+                    return 'https://' + text;
+                }
+                return text;
+            };
+
             const generateIssueSummary = () => {
                 const summary = {};
                 
@@ -442,30 +483,47 @@
                             <h2 className="text-2xl font-bold text-gray-800 mb-4">Returns Details</h2>
                             
                             <div className="overflow-x-auto">
-                                {filteredData.length > 0 ? (
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="bg-indigo-50">
-                                                {Object.keys(filteredData[0]).filter(key => key !== 'id').map((header, index) => (
-                                                    <th key={index} className={`px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider ${index === 0 ? 'whitespace-nowrap' : ''}`}>
-                                                        {header}
-                                                    </th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200">
-                                            {filteredData.map((item, rowIndex) => (
-                                                <tr key={item.id} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                                    {Object.entries(item).filter(([key]) => key !== 'id').map(([key, value], colIndex) => (
-                                                <td key={colIndex} className={`px-6 py-4 text-sm text-gray-700 ${colIndex === 0 ? 'whitespace-nowrap' : ''}`}>
-                                                    {value || <span className="text-gray-400 italic">-</span>}
-                                                </td>
+                                {filteredData.length > 0 ? (() => {
+                                    const headers = Object.keys(filteredData[0]).filter(key => key !== 'id');
+                                    const linkColumnIndex = detectLinkColumn(headers, filteredData);
+                                    const columnAfterLink = linkColumnIndex + 1;
+                                    
+                                    return (
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="bg-indigo-50">
+                                                    {headers.map((header, index) => (
+                                                        <th key={index} className={`px-6 py-3 text-left text-sm font-bold text-gray-700 uppercase tracking-wider ${index === 0 ? 'whitespace-nowrap' : ''}`}>
+                                                            {header}
+                                                        </th>
                                                     ))}
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                ) : (
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {filteredData.map((item, rowIndex) => (
+                                                    <tr key={item.id} className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                        {Object.entries(item).filter(([key]) => key !== 'id').map(([key, value], colIndex) => (
+                                                            <td key={colIndex} className={`px-6 py-4 text-sm text-gray-700 ${colIndex === 0 ? 'whitespace-nowrap' : ''} ${colIndex === columnAfterLink ? 'whitespace-nowrap' : ''}`}>
+                                                                {colIndex === linkColumnIndex && isLink(value) ? (
+                                                                    <a 
+                                                                        href={formatLink(value)} 
+                                                                        target="_blank" 
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-blue-600 hover:text-blue-800 underline"
+                                                                    >
+                                                                        {value}
+                                                                    </a>
+                                                                ) : (
+                                                                    value || <span className="text-gray-400 italic">-</span>
+                                                                )}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    );
+                                })() : (
                                     <div className="text-center py-12">
                                         <Package />
                                         <p className="text-gray-500 text-lg mt-4">No returns found for selected date range</p>
