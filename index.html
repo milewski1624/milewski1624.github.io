@@ -37,6 +37,17 @@
 
 
 
+            const sortDataByDate = (dataToSort) => {
+                return dataToSort.sort((a, b) => {
+                    const dateA = parseDate(a.date);
+                    const dateB = parseDate(b.date);
+                    if (!dateA && !dateB) return 0;
+                    if (!dateA) return 1;
+                    if (!dateB) return -1;
+                    return dateB - dateA; // Latest first (descending)
+                });
+            };
+
             const processCSVData = (csvText) => {
                 try {
                     const rows = csvText.split('\n').map(row => {
@@ -63,8 +74,9 @@
                         console.log('Sample processed data:', processedData.slice(0, 3));
                     }
                     
-                    setData(processedData);
-                    setFilteredData(processedData);
+                    const sortedData = sortDataByDate(processedData);
+                    setData(sortedData);
+                    setFilteredData(sortedData);
                     setLoading(false);
                 } catch (err) {
                     console.error('Error processing CSV:', err);
@@ -131,7 +143,7 @@
                 console.log('Current data length:', data.length);
                 
                 if (!startDate || !endDate) {
-                    // If no dates selected, show all data
+                    // If no dates selected, show all data sorted
                     console.log('No dates selected, showing all data');
                     setFilteredData(data);
                     setShowSummary(false);
@@ -156,7 +168,8 @@
                 });
 
                 console.log('Filtered data length:', filtered.length);
-                setFilteredData(filtered);
+                const sortedFiltered = sortDataByDate([...filtered]); // Create copy and sort
+                setFilteredData(sortedFiltered);
                 setShowSummary(false);
             };
 
