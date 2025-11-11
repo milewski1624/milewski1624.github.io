@@ -126,7 +126,8 @@
                     setLoading(false);
                 };
                 
-                reader.readAsText(file);
+                // Use UTF-8 encoding to handle Polish characters and euro symbol
+                reader.readAsText(file, 'UTF-8');
             };
 
             const parseDate = (dateStr) => {
@@ -194,9 +195,9 @@
             const generateIssueSummary = () => {
                 const summary = {};
                 
-                // Get column 9 (issues column) - index 9 = 10th column
+                // Get column 8 (issues column) - index 8 = 9th column
                 const headers = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
-                const issueColumn = headers[9]; // Column 9 is issues
+                const issueColumn = headers[8]; // Column 8 is issues (before price column)
                 
                 console.log('Issue column:', issueColumn);
                 console.log('Headers:', headers);
