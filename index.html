@@ -189,6 +189,18 @@
             font-size: 14px;
         }
         
+        td a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        
+        td a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
         tr:hover {
             background: #f7fafc;
         }
@@ -394,11 +406,12 @@
         }
 
         function updateStats() {
-            document.getElementById('totalRows').textContent = csvData.length;
-            document.getElementById('filteredRows').textContent = csvData.length;
+            const validRows = csvData.filter(row => row[0] && row[0].trim() !== '');
+            document.getElementById('totalRows').textContent = validRows.length;
+            document.getElementById('filteredRows').textContent = validRows.length;
             
-            if (csvData.length > 0) {
-                const dates = csvData.map(row => row[0]).filter(date => date);
+            if (validRows.length > 0) {
+                const dates = validRows.map(row => row[0]).filter(date => date && date.trim() !== '');
                 if (dates.length > 0) {
                     const minDate = dates.reduce((min, date) => date < min ? date : min);
                     const maxDate = dates.reduce((max, date) => date > max ? date : max);
@@ -415,7 +428,8 @@
         }
 
         function displayAllData() {
-            displayResults(csvData);
+            const validRows = csvData.filter(row => row[0] && row[0].trim() !== '');
+            displayResults(validRows);
         }
 
         function applyFilters() {
@@ -424,14 +438,17 @@
             const searchText = document.getElementById('issueSearch').value.toLowerCase();
 
             let filteredData = csvData.filter(row => {
-                const dateValue = row[0];
+                const dateValue = row[0] ? row[0].trim() : '';
                 const issueValue = row[8] ? row[8].toLowerCase() : '';
 
+                // Skip rows with empty dates
+                if (!dateValue) return false;
+
                 let dateMatch = true;
-                if (startDate && dateValue) {
+                if (startDate) {
                     dateMatch = dateValue >= startDate;
                 }
-                if (endDate && dateValue) {
+                if (endDate) {
                     dateMatch = dateMatch && dateValue <= endDate;
                 }
 
@@ -469,7 +486,13 @@
             data.forEach(row => {
                 tableHTML += '<tr>';
                 row.forEach(cell => {
-                    tableHTML += `<td>${cell}</td>`;
+                    const isLink = cell && (cell.startsWith('http://') || cell.startsWith('https://') || cell.startsWith('www.'));
+                    if (isLink) {
+                        const url = cell.startsWith('www.') ? 'https://' + cell : cell;
+                        tableHTML += `<td><a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none; font-weight: 500;">${cell}</a></td>`;
+                    } else {
+                        tableHTML += `<td>${cell}</td>`;
+                    }
                 });
                 tableHTML += '</tr>';
             });
