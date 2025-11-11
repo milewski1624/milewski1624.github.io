@@ -106,15 +106,16 @@
 
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                // Set end date to end of day to include same day records
+                // Set start date to start of day and end date to end of day
+                start.setHours(0, 0, 0, 0);
                 end.setHours(23, 59, 59, 999);
                 
                 const filtered = data.filter(item => {
                     const itemDate = parseDate(item.date);
                     if (!itemDate) return false;
-                    // Set item date to start of day for proper comparison
-                    itemDate.setHours(0, 0, 0, 0);
-                    return itemDate >= start && itemDate <= end;
+                    // Create a copy of itemDate to avoid modifying the original
+                    const itemDateCopy = new Date(itemDate);
+                    return itemDateCopy >= start && itemDateCopy <= end;
                 });
 
                 setFilteredData(filtered);
