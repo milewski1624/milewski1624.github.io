@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Daabolla — Favorites</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue-dark:#0f172a;
+    --blue:#2563eb;
+    --blue-light:#60a5fa;
+    --glass: rgba(255,255,255,0.95);
+    --muted:#64748b;
+    --card:#ffffff;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.2);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family: "Inter", "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 20%, #06b6d4 40%, #10b981 60%, #059669 80%, #0d9488 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 20s ease infinite;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    padding:40px 20px;
+    color:var(--blue-dark);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(6, 182, 212, 0.3) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+    animation: overlayPulse 15s ease infinite;
+  }
+
+  @keyframes overlayPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+
+  @keyframes gradientShift {
+    0% { 
+      background-position: 0% 50%;
+    }
+    33% { 
+      background-position: 50% 50%;
+    }
+    66% { 
+      background-position: 100% 50%;
+    }
+    100% { 
+      background-position: 0% 50%;
+    }
+  }
+
+  .stage {
+    width:100%;
+    max-width:1180px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius:32px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    padding:40px;
+    overflow:hidden;
+    position: relative;
+    z-index: 1;
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:24px;
+    margin-bottom:32px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display:flex;
+    gap:16px;
+    align-items:center;
+  }
+  .logo {
+    width:72px;
+    height:72px;
+    border-radius:18px;
+    background:linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-weight:800;
+    font-size:28px;
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: logoShine 3s infinite;
+  }
+
+  @keyframes logoShine {
+    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+  }
+
+  .logo:hover {
+    transform: scale(1.05) rotate(5deg);
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
+  }
+
+  .title {
+    font-size:32px;
+    font-weight:700;
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #10b981 100%);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+    animation: shimmer 8s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .subtitle { 
+    font-size:14px;
+    color:var(--muted); 
+    margin-top:6px;
+    font-weight:500;
+    letter-spacing: 0.2px;
+  }
+
+  .controls {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    flex-wrap: wrap;
+  }
+  .controls input[type="search"]{
+    padding:14px 18px;
+    border-radius:14px;
+    border:2px solid rgba(59, 130, 246, 0.2);
+    width:320px;
+    background:rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    outline:none;
+    font-size:14px;
+    font-weight:500;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .controls input[type="search"]:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), var(--shadow-md);
+    background: rgba(255, 255, 255, 1);
+  }
+
+  .controls input[type="search"]::placeholder {
+    color: var(--muted);
+    opacity: 0.7;
+  }
+
+  .controls a.btn {
+    text-decoration:none;
+    padding:14px 24px;
+    border-radius:14px;
+    background:linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+    color:white;
+    font-weight:600;
+    font-size:14px;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .controls a.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+  }
+
+  main { display:block; }
+
+  section.category {
+    margin-top:32px;
+    animation: fadeInUp 0.6s ease-out backwards;
+  }
+
+  section.category:nth-child(1) { animation-delay: 0.1s; }
+  section.category:nth-child(2) { animation-delay: 0.2s; }
+  section.category:nth-child(3) { animation-delay: 0.3s; }
+
+  section.category h2 {
+    font-size:20px;
+    margin-bottom:20px;
+    color:var(--blue-dark);
+    font-weight:700;
+    letter-spacing: -0.3px;
+  }
+
+  .grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap:16px;
+  }
+
+  .tile {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius:18px;
+    padding:20px;
+    display:flex;
+    gap:16px;
+    align-items:center;
+    border:1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration:none;
+    color:inherit;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease-out backwards;
+  }
+
+  .tile:nth-child(1) { animation-delay: 0.1s; }
+  .tile:nth-child(2) { animation-delay: 0.15s; }
+  .tile:nth-child(3) { animation-delay: 0.2s; }
+  .tile:nth-child(4) { animation-delay: 0.25s; }
+  .tile:nth-child(5) { animation-delay: 0.3s; }
+  .tile:nth-child(6) { animation-delay: 0.35s; }
+  .tile:nth-child(7) { animation-delay: 0.4s; }
+  .tile:nth-child(8) { animation-delay: 0.45s; }
+
+  .tile::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .tile:hover::before {
+    left: 100%;
+  }
+
+  .tile:hover { 
+    transform: translateY(-6px) scale(1.02); 
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.95);
+  }
+
+  .tile .icon {
+    width:64px;
+    height:64px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-size:24px;
+    font-weight:800;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tile:hover .icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .tile .meta {
+    display:flex;
+    flex-direction:column;
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .tile .meta .name { 
+    font-weight:700;
+    font-size:16px;
+    color:var(--blue-dark);
+    letter-spacing: -0.2px;
+    margin-bottom: 4px;
+  }
+  .tile .meta .url { 
+    font-size:12px;
+    color:var(--muted); 
+    margin-top:2px; 
+    word-break:break-all;
+    font-weight:500;
+    opacity: 0.8;
+  }
+
+  .blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+  .indigo { background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); }
+  .teal { background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%); }
+  .gray { background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); }
+
+  footer { 
+    margin-top:40px;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    font-weight:500;
+    padding-top: 24px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    letter-spacing: 0.3px;
+  }
+
+  @media (max-width:900px){
+    body {
+      padding: 20px 16px;
+    }
+
+    .stage {
+      padding: 32px 24px;
+      border-radius: 24px;
+    }
+
+    header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .brand {
+      width: 100%;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+      font-size: 24px;
+    }
+
+    .title {
+      font-size: 28px;
+    }
+
+    .controls {
+      width: 100%;
+    }
+
+    .controls input[type="search"]{ 
+      width: 100%;
+      flex: 1;
+    }
+
+    .controls a.btn {
+      width: 100%;
+      text-align: center;
+    }
+
+    .grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .tile {
+      padding: 18px;
+    }
+
+    .tile .icon {
+      width: 56px;
+      height: 56px;
+      font-size: 20px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .stage {
+      padding: 24px 20px;
+    }
+
+    .title {
+      font-size: 24px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+    }
+
+    .logo {
+      width: 56px;
+      height: 56px;
+      font-size: 20px;
+    }
+
+    section.category h2 {
+      font-size: 18px;
+    }
+
+    .tile .meta .name {
+      font-size: 15px;
+    }
+
+    .tile .meta .url {
+      font-size: 11px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="stage" role="main" aria-labelledby="favTitle">
+    <header>
+      <div class="brand">
+        <div class="logo">D</div>
+        <div>
+          <div class="title" id="favTitle">Daabolla — Favorites</div>
+          <div class="subtitle">Click any tile to open that site in a new tab</div>
+        </div>
+      </div>
+
+      <div class="controls" role="search">
+        <input id="filter" type="search" placeholder="Filter by name (e.g. YouTube, One Piece)" aria-label="Filter favorites">
+        <a class="btn" href="index.html">Back</a>
+      </div>
+    </header>
+
+    <main>
+      <!-- Repair -->
+      <section class="category" data-cat="Repair">
+        <h2>Repair</h2>
+        <div class="grid" id="repairGrid">
+          <a class="tile" href="https://www.youtube.com/c/Electronicsrepairschool/videos" target="_blank" rel="noopener">
+            <div class="icon blue">ER</div>
+            <div class="meta">
+              <div class="name">Electronics Repair School</div>
+              <div class="url">youtube.com / Electronicsrepairschool</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://www.youtube.com/c/NorthridgeFix/videos" target="_blank" rel="noopener">
+            <div class="icon indigo">NF</div>
+            <div class="meta">
+              <div class="name">Northridge Fix</div>
+              <div class="url">youtube.com / NorthridgeFix</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://www.youtube.com/user/rossmanngroup/videos" target="_blank" rel="noopener">
+            <div class="icon teal">RG</div>
+            <div class="meta">
+              <div class="name">Rossmann Group</div>
+              <div class="url">youtube.com / rossmanngroup</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://www.youtube.com/@WielkiElektronik/videos" target="_blank" rel="noopener">
+            <div class="icon gray">WE</div>
+            <div class="meta">
+              <div class="name">Wielki Elektronik</div>
+              <div class="url">youtube.com / WielkiElektronik</div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- Anime -->
+      <section class="category" data-cat="Anime">
+        <h2>Anime</h2>
+        <div class="grid" id="animeGrid">
+          <a class="tile" href="https://aniwatchtv.to/watch/one-piece-100?ep=153625" target="_blank" rel="noopener">
+            <div class="icon blue">OP</div>
+            <div class="meta">
+              <div class="name">AniWatch — One Piece</div>
+              <div class="url">aniwatchtv.to / One Piece</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://ww2.mangafreak.me/Manga/Boruto_Two_Blue_Vortex" target="_blank" rel="noopener">
+            <div class="icon indigo">BV</div>
+            <div class="meta">
+              <div class="name">MangaFreak — Boruto</div>
+              <div class="url">mangafreak.me / Boruto Two Blue Vortex</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://ww2.mangafreak.me/Manga/One_Piece" target="_blank" rel="noopener">
+            <div class="icon teal">OP</div>
+            <div class="meta">
+              <div class="name">MangaFreak — One Piece</div>
+              <div class="url">mangafreak.me / One Piece</div>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- Movies -->
+      <section class="category" data-cat="Movies">
+        <h2>Movies</h2>
+        <div class="grid" id="moviesGrid">
+          <a class="tile" href="https://yts.mx/browse-movies/2025/all/all/0/latest/0/all" target="_blank" rel="noopener">
+            <div class="icon blue">25</div>
+            <div class="meta">
+              <div class="name">YTS — 2025</div>
+              <div class="url">yts.mx / 2025</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://yts.mx/browse-movies/2024/all/all/0/latest/0/all" target="_blank" rel="noopener">
+            <div class="icon indigo">24</div>
+            <div class="meta">
+              <div class="name">YTS — 2024</div>
+              <div class="url">yts.mx / 2024</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://shahid4u.cx/" target="_blank" rel="noopener">
+            <div class="icon teal">SH</div>
+            <div class="meta">
+              <div class="name">Shahid4u</div>
+              <div class="url">shahid4u.cx</div>
+            </div>
+          </a>
+
+          <a class="tile" href="https://www.seedr.cc/" target="_blank" rel="noopener">
+            <div class="icon gray">SD</div>
+            <div class="meta">
+              <div class="name">Seedr</div>
+              <div class="url">seedr.cc</div>
+            </div>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>© <span id="year"></span> Daabolla — Quick favorites</footer>
+  </div>
+
+<script>
+  // filter input: filter tiles by name or url
+  const filterInput = document.getElementById('filter');
+  filterInput.addEventListener('input', () => {
+    const q = filterInput.value.trim().toLowerCase();
+    const tiles = document.querySelectorAll('.tile');
+    tiles.forEach(t => {
+      const name = t.querySelector('.name').textContent.toLowerCase();
+      const url = t.querySelector('.url').textContent.toLowerCase();
+      t.style.display = (q === '' || name.includes(q) || url.includes(q)) ? '' : 'none';
+    });
+  });
+
+  // set year
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
