@@ -247,7 +247,19 @@
                 // Get headers
                 const headers = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
                 const dateColumn = headers[0]; // Column 0 is date
-                const searchColumn = headers[9]; // Column 9 for text search
+                
+                // Find the search column by header name "POWÓD ZWROTU"
+                // Handle variations in whitespace and case
+                const searchColumnName = 'POWÓD ZWROTU';
+                const searchColumn = headers.find(header => {
+                    const normalizedHeader = header.trim();
+                    const normalizedSearch = searchColumnName.trim();
+                    return normalizedHeader === normalizedSearch || 
+                           normalizedHeader.toLowerCase() === normalizedSearch.toLowerCase();
+                });
+                
+                console.log('Available headers:', headers);
+                console.log('Search column found:', searchColumn);
                 
                 let filtered = data;
                 
@@ -270,16 +282,24 @@
                     });
                 }
                 
-                // Filter by search text in column 9 if search text is provided
+                // Filter by search text in "POWÓD ZWROTU" column if search text is provided
+                // Case-insensitive partial matching - works with 1 letter or few letters
                 if (searchText && searchText.trim() && searchColumn) {
                     const searchLower = searchText.toLowerCase().trim();
+                    console.log('Searching for:', searchLower, 'in column:', searchColumn);
                     filtered = filtered.filter(item => {
                         const columnValue = item[searchColumn] || '';
-                        return columnValue.toLowerCase().includes(searchLower);
+                        const columnValueLower = columnValue.toLowerCase();
+                        const matches = columnValueLower.includes(searchLower);
+                        console.log('Column value:', columnValue, 'Matches:', matches);
+                        return matches;
                     });
+                    console.log('After text filter, filtered data length:', filtered.length);
+                } else if (searchText && searchText.trim() && !searchColumn) {
+                    console.warn('Search column "POWÓD ZWROTU" not found in headers');
                 }
 
-                console.log('Filtered data length:', filtered.length);
+                console.log('Final filtered data length:', filtered.length);
                 const sortedFiltered = sortDataByDate([...filtered]); // Create copy and sort
                 setFilteredData(sortedFiltered);
                 setShowSummary(false);
@@ -488,7 +508,7 @@
                                 </div>
                                 <div>
                                     <h2 className="text-3xl font-bold text-gray-800">Date Range & Text Filter</h2>
-                                    <p className="text-gray-500 text-sm">Filter returns by date range and search text in column 9</p>
+                                    <p className="text-gray-500 text-sm">Filter returns by date range and search text in "POWÓD ZWROTU" column</p>
                                 </div>
                             </div>
                             
@@ -538,7 +558,7 @@
                                     <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mr-3 shadow-md">
                                         <Search className="text-white" />
                                     </div>
-                                    <label className="block text-sm font-semibold text-gray-700">Search in Column 9</label>
+                                    <label className="block text-sm font-semibold text-gray-700">Search in "POWÓD ZWROTU" Column</label>
                                 </div>
                                 <div className="relative">
                                     <input
@@ -550,14 +570,14 @@
                                                 filterByDateRange();
                                             }
                                         }}
-                                        placeholder="Enter text to search in column 9..."
+                                        placeholder="Enter text to search (case-insensitive, partial match)..."
                                         className="w-full px-4 py-3 pl-12 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all font-medium"
                                     />
                                     <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
                                         <Search className="text-gray-400" />
                                     </div>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2 ml-12">Search will filter results within the selected date range (if any)</p>
+                                <p className="text-xs text-gray-500 mt-2 ml-12">Case-insensitive search - works with 1 letter or more. Filters within selected date range (if any).</p>
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-gray-200">
