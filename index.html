@@ -76,6 +76,7 @@
             const [showSummary, setShowSummary] = useState(false);
             const [issueSummary, setIssueSummary] = useState({});
             const [lastUpdated, setLastUpdated] = useState(null);
+            const searchTimeoutRef = React.useRef(null);
             
             // Google Sheets URL - convert to CSV export format
             // Only reading from "Master Data (Raw Data File)" sheet
@@ -135,6 +136,23 @@
             useEffect(() => {
                 fetchDataFromGoogleSheets();
             }, []);
+
+            // Debounce search input to avoid too many filter operations
+            useEffect(() => {
+                if (searchTimeoutRef.current) {
+                    clearTimeout(searchTimeoutRef.current);
+                }
+                
+                searchTimeoutRef.current = setTimeout(() => {
+                    filterByDateRange();
+                }, 300); // Wait 300ms after user stops typing
+                
+                return () => {
+                    if (searchTimeoutRef.current) {
+                        clearTimeout(searchTimeoutRef.current);
+                    }
+                };
+            }, [searchText, startDate, endDate, data]);
 
 
 
@@ -237,21 +255,30 @@
             const filterByDateRange = () => {
                 console.log('Filter called. Start date:', startDate, 'End date:', endDate, 'Search text:', searchText);
                 console.log('Current data length:', data.length);
+                
+                if (data.length === 0) {
+                    setFilteredData([]);
+                    return;
+                }
+                
                 // Get headers
-                const headers = data.length > 0 ? Object.keys(data[0]).filter(key => key !== 'id') : [];
+                const headers = Object.keys(data[0]).filter(key => key !== 'id');
                 const dateColumn = headers[0]; // Column 0 is date
+                
                 // Find the search column by header name "Order ID"
                 // Handle variations in whitespace and case
                 const searchColumnName = 'Order ID';
-                const searchColumn = headers.find(header => {
-                    const normalizedHeader = header.trim();
-                    const normalizedSearch = searchColumnName.trim();
-                    return normalizedHeader === normalizedSearch || 
-                           normalizedHeader.toLowerCase() === normalizedSearch.toLowerCase();
+                let searchColumn = headers.find(header => {
+                    const normalizedHeader = header.trim().toLowerCase();
+                    const normalizedSearch = searchColumnName.trim().toLowerCase();
+                    return normalizedHeader === normalizedSearch;
                 });
+                
                 console.log('Available headers:', headers);
                 console.log('Search column found:', searchColumn);
+                
                 let filtered = data;
+                
                 // Filter by date range if dates are provided
                 if (startDate && endDate) {
                     const start = new Date(startDate);
@@ -263,14 +290,14 @@
                     filtered = filtered.filter(item => {
                         const itemDate = parseDate(item[dateColumn]);
                         if (!itemDate) return false;
-                        // Create a copy of itemDate to avoid modifying the original
                         const itemDateCopy = new Date(itemDate);
                         return itemDateCopy >= start && itemDateCopy <= end;
                     });
                 }
+                
                 // Filter by search text in "Order ID" column if search text is provided
                 // Case-insensitive partial matching - works with any character, letter, number, or symbol
-                if (searchText && searchText.trim() && searchColumn) {
+                if (searchText && searchText.trim().length > 0 && searchColumn) {
                     const searchTrimmed = searchText.trim();
                     const searchLower = searchTrimmed.toLowerCase();
                     console.log('Searching for:', searchLower, 'in column:', searchColumn);
@@ -279,16 +306,18 @@
                         const columnValueLower = columnValue.toLowerCase();
                         // Use includes for substring matching - works with any character
                         const matches = columnValueLower.includes(searchLower);
-                        console.log('Column value:', columnValue, 'Search term:', searchLower, 'Matches:', matches);
+                        if (matches) {
+                            console.log('Found match - Column value:', columnValue, 'Search term:', searchLower);
+                        }
                         return matches;
                     });
                     console.log('After text filter, filtered data length:', filtered.length);
-                } else if (searchText && searchText.trim() && !searchColumn) {
-                    console.warn('Search column "Order ID" not found in headers');
+                } else if (searchText && searchText.trim().length > 0 && !searchColumn) {
+                    console.warn('Search column "Order ID" not found in headers. Available headers:', headers);
                 }
 
                 console.log('Final filtered data length:', filtered.length);
-                const sortedFiltered = sortDataByDate([...filtered]); // Create copy and sort
+                const sortedFiltered = sortDataByDate([...filtered]);
                 setFilteredData(sortedFiltered);
                 setShowSummary(false);
             };
@@ -552,15 +581,12 @@
                                     <input
                                         type="text"
                                         value={searchText}
-                                        onChange={(e) => {
-                                            setSearchText(e.target.value);
-                                            // Trigger filter immediately as user types
-                                            setTimeout(() => {
-                                                filterByDateRange();
-                                            }, 0);
-                                        }}
+                                        onChange={(e) => setSearchText(e.target.value)}
                                         onKeyPress={(e) => {
                                             if (e.key === 'Enter') {
+                                                if (searchTimeoutRef.current) {
+                                                    clearTimeout(searchTimeoutRef.current);
+                                                }
                                                 filterByDateRange();
                                             }
                                         }}
