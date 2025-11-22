@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Returns Dashboard</title>
+    <title>Pakistan Team Log</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -80,9 +80,11 @@
             // Google Sheets URL - convert to CSV export format (NEW SHEET)
             // Only reading from the new sheet tab - no data modification
             const GOOGLE_SHEETS_ID = '1mm6HDs9OI6ZfXaCcnGh2mV2zQn8VyiTEPyuL26PZIls';
-            const SHEET_NAME = 'Sheet1'; // Update if the tab name is different
-            // Using gviz API which supports sheet name parameter for CSV export
-            const CSV_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+            const SHEET_NAME = 'Master Data (Raw Data File)';
+            // Limit to columns A:N (first 14 columns)
+            // Use Google Sheets query to select columns A to N
+            const QUERY = encodeURIComponent('select ' + Array.from({length: 14}, (_, i) => String.fromCharCode(65 + i)).join(', '));
+            const CSV_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}&tq=${QUERY}`;
             
             const fetchDataFromGoogleSheets = async () => {
                 setLoading(true);
@@ -160,7 +162,6 @@
                         const result = [];
                         let current = '';
                         let inQuotes = false;
-                        
                         for (let i = 0; i < row.length; i++) {
                             const char = row[i];
                             if (char === '"') {
@@ -173,22 +174,17 @@
                             }
                         }
                         result.push(current.trim()); // Add last field
-                        
-                        return result.map(cell => {
-                            // Remove quotes if present
-                            return cell.replace(/^"|"$/g, '').trim();
-                        });
-                    }).filter(row => row.length > 1); // Filter out empty rows
-                    
-                    console.log('Total rows:', rows.length);
-                    if (rows.length > 0) {
-                        console.log('Headers:', rows[0]);
+                        return result.map(cell => cell.replace(/^"|"$/g, '').trim());
+                    }).filter(row => row.length > 1);
+                    // Only keep first 14 columns (A-N)
+                    const trimmedRows = rows.map(row => row.slice(0, 14));
+                    console.log('Total rows:', trimmedRows.length);
+                    if (trimmedRows.length > 0) {
+                        console.log('Headers:', trimmedRows[0]);
                     }
-                    
                     // Get headers from first row
-                    const headers = rows[0];
-                    
-                    const processedData = rows.slice(1).map((row, index) => {
+                    const headers = trimmedRows[0];
+                    const processedData = trimmedRows.slice(1).map((row, index) => {
                         const rowData = { id: index };
                         headers.forEach((header, colIndex) => {
                             rowData[header] = row[colIndex] || '';
@@ -198,12 +194,10 @@
                         // Filter out rows that don't have a date (column 0)
                         return item[headers[0]];
                     });
-                    
                     console.log('Processed data length:', processedData.length);
                     if (processedData.length > 0) {
                         console.log('Sample processed data:', processedData.slice(0, 1));
                     }
-                    
                     const sortedData = sortDataByDate(processedData);
                     setData(sortedData);
                     setFilteredData(sortedData);
