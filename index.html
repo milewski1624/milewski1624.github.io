@@ -269,15 +269,17 @@
                     });
                 }
                 // Filter by search text in "Order ID" column if search text is provided
-                // Case-insensitive partial matching - works with 1 letter or few letters
+                // Case-insensitive partial matching - works with any character, letter, number, or symbol
                 if (searchText && searchText.trim() && searchColumn) {
-                    const searchLower = searchText.toLowerCase().trim();
+                    const searchTrimmed = searchText.trim();
+                    const searchLower = searchTrimmed.toLowerCase();
                     console.log('Searching for:', searchLower, 'in column:', searchColumn);
                     filtered = filtered.filter(item => {
-                        const columnValue = item[searchColumn] || '';
+                        const columnValue = String(item[searchColumn] || '');
                         const columnValueLower = columnValue.toLowerCase();
+                        // Use includes for substring matching - works with any character
                         const matches = columnValueLower.includes(searchLower);
-                        console.log('Column value:', columnValue, 'Matches:', matches);
+                        console.log('Column value:', columnValue, 'Search term:', searchLower, 'Matches:', matches);
                         return matches;
                     });
                     console.log('After text filter, filtered data length:', filtered.length);
@@ -550,7 +552,13 @@
                                     <input
                                         type="text"
                                         value={searchText}
-                                        onChange={(e) => setSearchText(e.target.value)}
+                                        onChange={(e) => {
+                                            setSearchText(e.target.value);
+                                            // Trigger filter immediately as user types
+                                            setTimeout(() => {
+                                                filterByDateRange();
+                                            }, 0);
+                                        }}
                                         onKeyPress={(e) => {
                                             if (e.key === 'Enter') {
                                                 filterByDateRange();
