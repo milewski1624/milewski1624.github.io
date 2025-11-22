@@ -265,17 +265,28 @@
                 const headers = Object.keys(data[0]).filter(key => key !== 'id');
                 const dateColumn = headers[0]; // Column 0 is date
                 
+                console.log('Available headers:', headers);
+                
                 // Find the search column by header name "Order ID"
                 // Handle variations in whitespace and case
                 const searchColumnName = 'Order ID';
-                let searchColumn = headers.find(header => {
-                    const normalizedHeader = header.trim().toLowerCase();
-                    const normalizedSearch = searchColumnName.trim().toLowerCase();
-                    return normalizedHeader === normalizedSearch;
-                });
+                let searchColumn = null;
+                let searchColumnIndex = -1;
                 
-                console.log('Available headers:', headers);
-                console.log('Search column found:', searchColumn);
+                for (let i = 0; i < headers.length; i++) {
+                    const normalizedHeader = headers[i].trim().toLowerCase();
+                    if (normalizedHeader === searchColumnName.toLowerCase() || normalizedHeader.includes('order') && normalizedHeader.includes('id')) {
+                        searchColumn = headers[i];
+                        searchColumnIndex = i;
+                        break;
+                    }
+                }
+                
+                console.log('Search column found:', searchColumn, 'at index:', searchColumnIndex);
+                console.log('First few Order IDs in data:', data.slice(0, 5).map(item => ({
+                    header: searchColumn,
+                    value: searchColumn ? item[searchColumn] : 'N/A'
+                })));
                 
                 let filtered = data;
                 
@@ -297,23 +308,25 @@
                 
                 // Filter by search text in "Order ID" column if search text is provided
                 // Case-insensitive partial matching - works with any character, letter, number, or symbol
-                if (searchText && searchText.trim().length > 0 && searchColumn) {
+                if (searchText && searchText.trim().length > 0) {
                     const searchTrimmed = searchText.trim();
                     const searchLower = searchTrimmed.toLowerCase();
                     console.log('Searching for:', searchLower, 'in column:', searchColumn);
-                    filtered = filtered.filter(item => {
-                        const columnValue = String(item[searchColumn] || '');
-                        const columnValueLower = columnValue.toLowerCase();
-                        // Use includes for substring matching - works with any character
-                        const matches = columnValueLower.includes(searchLower);
-                        if (matches) {
-                            console.log('Found match - Column value:', columnValue, 'Search term:', searchLower);
-                        }
-                        return matches;
-                    });
-                    console.log('After text filter, filtered data length:', filtered.length);
-                } else if (searchText && searchText.trim().length > 0 && !searchColumn) {
-                    console.warn('Search column "Order ID" not found in headers. Available headers:', headers);
+                    
+                    if (searchColumn) {
+                        filtered = filtered.filter(item => {
+                            const columnValue = String(item[searchColumn] || '').trim();
+                            const columnValueLower = columnValue.toLowerCase();
+                            const matches = columnValueLower.includes(searchLower);
+                            if (matches) {
+                                console.log('✓ Match found - Column value:', columnValue, 'Search term:', searchLower);
+                            }
+                            return matches;
+                        });
+                        console.log('After text filter, filtered data length:', filtered.length);
+                    } else {
+                        console.warn('Search column "Order ID" not found in headers. Available headers:', headers);
+                    }
                 }
 
                 console.log('Final filtered data length:', filtered.length);
