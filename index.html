@@ -77,8 +77,8 @@
             const [issueSummary, setIssueSummary] = useState({});
             const [lastUpdated, setLastUpdated] = useState(null);
             
-            // Google Sheets URL - convert to CSV export format (NEW SHEET)
-            // Only reading from the new sheet tab - no data modification
+            // Google Sheets URL - convert to CSV export format
+            // Only reading from "Master Data (Raw Data File)" sheet
             const GOOGLE_SHEETS_ID = '1mm6HDs9OI6ZfXaCcnGh2mV2zQn8VyiTEPyuL26PZIls';
             const SHEET_NAME = 'Master Data (Raw Data File)';
             // Limit to columns A:N (first 14 columns)
@@ -119,7 +119,7 @@
                     }
                     
                     if (!csvText || csvText.trim().length === 0) {
-                        throw new Error(`No data received from "ReturnsRecords" sheet. Please ensure the sheet is shared publicly or accessible.`);
+                        throw new Error(`No data received from "Master Data (Raw Data File)" sheet. Please ensure the sheet is shared publicly or accessible.`);
                     }
                     
                     // Process the CSV data (READ-ONLY operation - no modifications to source)
@@ -127,7 +127,7 @@
                     setLastUpdated(new Date());
                 } catch (err) {
                     console.error('Error fetching data:', err);
-                    setError(err.message || `Failed to fetch data from "ReturnsRecords" sheet. Please check if the sheet is accessible.`);
+                    setError(err.message || `Failed to fetch data from "Master Data (Raw Data File)" sheet. Please check if the sheet is accessible.`);
                     setLoading(false);
                 }
             };
@@ -456,8 +456,8 @@
                         <div className="glass-effect rounded-3xl shadow-2xl p-8 mb-8 fade-in">
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                                 <div className="flex-1">
-                                    <h1 className="text-5xl font-extrabold gradient-text mb-3">Returns Dashboard</h1>
-                                    <p className="text-gray-600 text-lg">Real-time analytics from "ReturnsRecords" sheet (Read-only)</p>
+                                    <h1 className="text-5xl font-extrabold gradient-text mb-3">Pakistan Team Log</h1>
+                                    <p className="text-gray-600 text-lg">Real-time analytics from "Master Data (Raw Data File)" sheet (Read-only)</p>
                                     {lastUpdated && (
                                         <p className="text-sm text-gray-500 mt-2 flex items-center">
                                             <CheckCircle className="text-green-500 mr-2" />
